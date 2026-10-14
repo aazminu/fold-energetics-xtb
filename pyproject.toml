@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fold-energetics-xtb"
+version = "0.2.4"
+description = "High-throughput protein pocket structural filtering, PAE rigid-domain graph partitioning, and semiempirical quantum-chemical (xTB) ligand bioactivity triage."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [
+  { name = "Abdullah Azmi", email = "erlokix@gmail.com" }
+]
+dependencies = []
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
