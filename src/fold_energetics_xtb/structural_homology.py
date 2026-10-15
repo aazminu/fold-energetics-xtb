@@ -60,9 +60,14 @@ class Foldseek3DiHomologyScorer:
 
     def align_3di(self, seq_a: str, seq_b: str, gap_penalty: float = -2.0) -> Tuple[float, float]:
         """Needleman-Wunsch global alignment returning (raw_score, normalized_identity)."""
-        if not seq_a or not seq_b:
+        clean_a = seq_a.strip().upper()
+        clean_b = seq_b.strip().upper()
+        if not clean_a or not clean_b:
             return 0.0, 0.0
-        m, n = len(seq_a), len(seq_b)
+        if any(ch not in ALPHABET_3DI for ch in clean_a + clean_b):
+            raise ValueError("Sequences must contain only valid 3Di tokens")
+
+        m, n = len(clean_a), len(clean_b)
         dp = [[0.0] * (n + 1) for _ in range(m + 1)]
         for i in range(1, m + 1):
             dp[i][0] = i * gap_penalty
@@ -70,11 +75,11 @@ class Foldseek3DiHomologyScorer:
             dp[0][j] = j * gap_penalty
 
         for i in range(1, m + 1):
-            ca = seq_a[i - 1]
-            idx_a = ALPHABET_3DI.find(ca)
+            ca = clean_a[i - 1]
+            idx_a = ALPHABET_3DI.index(ca)
             for j in range(1, n + 1):
-                cb = seq_b[j - 1]
-                idx_b = ALPHABET_3DI.find(cb)
+                cb = clean_b[j - 1]
+                idx_b = ALPHABET_3DI.index(cb)
                 if ca == cb:
                     sub = 3.5
                 else:
@@ -86,8 +91,34 @@ class Foldseek3DiHomologyScorer:
                     dp[i][j - 1] + gap_penalty,
                 )
 
-        matches = sum(1 for a, b in zip(seq_a, seq_b) if a == b)
-        identity = matches / max(m, n)
+        # Traceback optimal global alignment to compute true aligned sequence identity
+        i, j = m, n
+        matches = 0
+        aligned_columns = 0
+        while i > 0 or j > 0:
+            if i > 0 and j > 0:
+                ca = clean_a[i - 1]
+                cb = clean_b[j - 1]
+                if ca == cb:
+                    sub = 3.5
+                else:
+                    diff = abs(ALPHABET_3DI.index(ca) - ALPHABET_3DI.index(cb))
+                    sub = 1.2 if diff <= 2 else -1.0
+                if abs(dp[i][j] - (dp[i - 1][j - 1] + sub)) < 1e-9:
+                    if ca == cb:
+                        matches += 1
+                    aligned_columns += 1
+                    i -= 1
+                    j -= 1
+                    continue
+            if i > 0 and abs(dp[i][j] - (dp[i - 1][j] + gap_penalty)) < 1e-9:
+                aligned_columns += 1
+                i -= 1
+            else:
+                aligned_columns += 1
+                j -= 1
+
+        identity = matches / max(aligned_columns, 1)
         return round(dp[m][n], 4), round(identity, 4)
 
     def compute_distance_rmsd(self, pocket_a: Sequence[Residue3D], pocket_b: Sequence[Residue3D]) -> float:
