@@ -1,0 +1,8 @@
+version = 1
+revision = 3
+requires-python = ">=3.10"
+
+[[package]]
+name = "fold-energetics-xtb"
+version = "0.2.4"
+source = { editable = "." }
