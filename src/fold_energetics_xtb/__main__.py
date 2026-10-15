@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
+import sys
 from pathlib import Path
 from typing import Any, Dict, List, Sequence
 
@@ -13,30 +15,39 @@ from .structural_homology import Foldseek3DiHomologyScorer, Residue3D
 
 def run_benchmark(seed: int = 42) -> List[Dict[str, Any]]:
     """Run reproducible structural pocket, PAE partitioning, 3Di homology, and GFN2-xTB benchmarks."""
-    _ = seed  # Deterministic structural and energetic benchmark suite
+    rng = random.Random(seed)
 
     # 1. Structural pocket & ligand triage benchmark
     triage = StructuralPocketTriage(min_plddt=75.0)
+    base_plddts = [91.4, 88.7, 93.2, 86.5, 89.1]
+    sampled_plddts = [p + rng.uniform(-0.4, 0.4) for p in base_plddts]
     pocket_eval = triage.score_pocket_and_ligands(
         "P00533",
-        [91.4, 88.7, 93.2, 86.5, 89.1],
+        sampled_plddts,
         [2.1, 1.8, 3.2, 2.7, 3.9],
         [
             CandidateLigand("CHEMBL_LOW", "CCO", 5.2, 4.8, 2.9, 1),
-            CandidateLigand("CHEMBL_HIGH", "CC(=O)Nc1ccc(O)cc1", 8.7, 0.9, 0.75, 4),
+            CandidateLigand(
+                "CHEMBL_HIGH",
+                "CC(=O)Nc1ccc(O)cc1",
+                8.7 + rng.uniform(-0.1, 0.1),
+                0.9,
+                0.75,
+                4,
+            ),
         ],
     )
 
     # 2. PAE rigid-domain graph partitioning benchmark
     plddts = [92.0, 89.5, 91.0, 48.0, 52.0, 88.0, 90.5, 87.0]
-    pae = [[12.0 for _ in range(8)] for _ in range(8)]
+    pae = [[12.0 + rng.uniform(-0.2, 0.2) for _ in range(8)] for _ in range(8)]
     for i in range(8):
         pae[i][i] = 0.5
     for domain in ((0, 1, 2), (5, 6, 7)):
         for i in domain:
             for j in domain:
                 if i != j:
-                    pae[i][j] = 1.8 if domain[0] == 0 else 2.1
+                    pae[i][j] = (1.8 if domain[0] == 0 else 2.1) + rng.uniform(-0.1, 0.1)
     partitioner = PAERigidDomainPartitioner(min_plddt=70.0, max_pae_angstrom=4.5, min_domain_size=3)
     pae_res = partitioner.partition(pae, plddts)
 
@@ -57,7 +68,13 @@ def run_benchmark(seed: int = 42) -> List[Dict[str, Any]]:
     ensemble = evaluator.evaluate_ensemble(
         [
             ConformerState("CONF_MIN", -42.500000, -6.20, 0.65, 4),
-            ConformerState("CONF_STRAINED", -42.497500, -5.90, 1.25, 2),
+            ConformerState(
+                "CONF_STRAINED",
+                -42.497500 + rng.uniform(-0.0003, 0.0003),
+                -5.90,
+                1.25,
+                2,
+            ),
             ConformerState("CONF_HIGH", -42.492000, -5.10, 2.40, 1),
         ],
         bioactive_conformer_id="CONF_STRAINED",
@@ -153,8 +170,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         else format_markdown_table(rows)
     )
     if args.output is not None:
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(rendered + "\n", encoding="utf-8")
+        try:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(rendered + "\n", encoding="utf-8")
+        except OSError as exc:
+            print(f"Error writing output to {args.output}: {exc}", file=sys.stderr)
+            return 1
     print(rendered)
     return 0
 
