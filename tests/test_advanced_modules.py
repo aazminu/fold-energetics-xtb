@@ -64,6 +64,14 @@ def test_foldseek_3di_and_catalytic_triad_detection() -> None:
     assert identity == 1.0
     assert raw_score > 10.0
 
+    # Shifted sequence with a single N-terminal insertion must recover high aligned identity via NW traceback
+    gapped_score, gapped_identity = scorer.align_3di("ACDEFGH", "CACDEFGH")
+    assert gapped_score == 22.5
+    assert gapped_identity == 0.875
+
+    with pytest.raises(ValueError, match="valid 3Di tokens"):
+        scorer.align_3di("ACDEF", "ACXEF")
+
     # Translation invariance of dRMSD
     translated = [
         Residue3D(
