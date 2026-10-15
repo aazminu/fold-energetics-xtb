@@ -112,6 +112,7 @@ def test_cli_benchmark_markdown_json_and_reproducibility(
     capsys: pytest.CaptureFixture[str], tmp_path: pytest.TempPathFactory
 ) -> None:
     import json
+    import os
     import subprocess
     import sys
     from pathlib import Path
@@ -119,7 +120,9 @@ def test_cli_benchmark_markdown_json_and_reproducibility(
 
     rows_a = run_benchmark(seed=42)
     rows_b = run_benchmark(seed=42)
+    rows_c = run_benchmark(seed=99)
     assert rows_a == rows_b
+    assert rows_a != rows_c
     assert len(rows_a) == 4
 
     md = format_markdown_table(rows_a)
@@ -136,6 +139,10 @@ def test_cli_benchmark_markdown_json_and_reproducibility(
     assert payload["benchmarks"] == rows_a
     assert json.loads(out_file.read_text(encoding="utf-8")) == payload
 
+    err_rc = main(["--format", "markdown", "--output", str(tmp_path)])
+    assert err_rc == 1
+    assert "Error writing output" in capsys.readouterr().err
+
     repo_root = Path(__file__).resolve().parents[1]
     proc = subprocess.run(
         [sys.executable, str(repo_root / "scripts" / "benchmark.py"), "--format", "markdown"],
@@ -145,6 +152,18 @@ def test_cli_benchmark_markdown_json_and_reproducibility(
     )
     assert "pae_rigid_domain_partition" in proc.stdout
 
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(repo_root / "src")
+    proc_mod = subprocess.run(
+        [sys.executable, "-m", "fold_energetics_xtb", "--format", "json", "--seed", "42"],
+        capture_output=True,
+        text=True,
+        env=env,
+        check=True,
+    )
+    assert json.loads(proc_mod.stdout)["seed"] == 42
+
     with pytest.raises(SystemExit):
         main(["--format", "invalid_fmt"])
+
 
