@@ -1,0 +1,30 @@
+{
+  "title": "FoldEnergetics-xTB: AlphaFold PAE Domain Partitioning, Foldseek 3Di Homology Search & Semiempirical Quantum Pocket Triage",
+  "upload_type": "software",
+  "description": "FoldEnergetics-xTB is a structural bioinformatics and quantum biochemistry package developed by the Computational Genomics & Agentic Systems (CGAS) Lab at Northwestern University. It couples AlphaFold 3 Predicted Aligned Error (PAE) graph partitioning with Foldseek 3Di structural homology alignment and GFN2-xTB semiempirical quantum-chemical calculations to triage small-molecule ligand-binding pockets.",
+  "creators": [
+    {
+      "name": "Azmi, Abdullah",
+      "affiliation": "Northwestern University, Department of Computer Science & NICO",
+      "orcid": "0009-0005-2720-3347"
+    }
+  ],
+  "keywords": [
+    "Structural Biology",
+    "AlphaFold 3",
+    "Predicted Aligned Error",
+    "Foldseek",
+    "Quantum Chemistry",
+    "GFN2-xTB",
+    "Bioinformatics",
+    "Ligand Binding"
+  ],
+  "license": "Apache-2.0",
+  "related_identifiers": [
+    {
+      "identifier": "https://abdullahazmi.com/lab/",
+      "relation": "isDocumentedBy",
+      "scheme": "url"
+    }
+  ]
+}
