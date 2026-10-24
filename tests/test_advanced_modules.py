@@ -167,3 +167,19 @@ def test_cli_benchmark_markdown_json_and_reproducibility(
         main(["--format", "invalid_fmt"])
 
 
+def test_summarize_pocket_ensemble() -> None:
+    from fold_energetics_xtb.pocket_triage import PocketEvaluation, summarize_pocket_ensemble
+
+    assert summarize_pocket_ensemble([])["total_pockets"] == 0
+    evals = [
+        PocketEvaluation("P00533", 90.2, 0.92, True, "CHEMBL939", 12.45),
+        PocketEvaluation("P04637", 62.1, 0.45, False, "CHEMBL553", 6.10),
+    ]
+    summary = summarize_pocket_ensemble(evals)
+    assert summary["total_pockets"] == 2
+    assert summary["druggable_count"] == 1
+    assert summary["druggable_fraction"] == 0.5
+    assert summary["best_uniprot_id"] == "P00533"
+    assert summary["best_composite_score"] == 12.45
+
+

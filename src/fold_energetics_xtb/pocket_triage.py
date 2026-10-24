@@ -72,6 +72,29 @@ class StructuralPocketTriage:
         )
 
 
+def summarize_pocket_ensemble(evaluations: Sequence[PocketEvaluation]) -> dict[str, object]:
+    """Summarize multi-pocket druggability fraction, mean pLDDT, and top composite binding score."""
+    if not evaluations:
+        return {
+            "total_pockets": 0,
+            "druggable_count": 0,
+            "druggable_fraction": 0.0,
+            "mean_plddt": 0.0,
+            "best_uniprot_id": "NONE",
+            "best_composite_score": 0.0,
+        }
+    druggable = [e for e in evaluations if e.druggable_pocket_valid]
+    best = max(evaluations, key=lambda e: e.composite_binding_score)
+    return {
+        "total_pockets": len(evaluations),
+        "druggable_count": len(druggable),
+        "druggable_fraction": round(len(druggable) / len(evaluations), 4),
+        "mean_plddt": round(sum(e.pocket_mean_plddt for e in evaluations) / len(evaluations), 2),
+        "best_uniprot_id": best.uniprot_id,
+        "best_composite_score": round(best.composite_binding_score, 4),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="FoldEnergetics-xTB Structural & Ligand Triage")
     parser.add_argument("--uniprot", default="P00533")
